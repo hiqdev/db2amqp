@@ -3,7 +3,9 @@
 namespace HiQDev\DB2AMQP;
 
 use PDO;
+use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
 
 class DB2AMQP
 {
@@ -28,27 +30,33 @@ class DB2AMQP
         $this->listen($dbChannel);
 
         while (1) {
-            $message = $this->getNotify();
-            $this->publish($exchange, $message);
+            $json = $this->getNotify();
+            $data = json_decode($json, true);
+            $this->publish($json, $exchange, $data['type'] ?? '');
         }
     }
 
     protected function listen(string $dbChannel): void
     {
-        $quoted = pg_escape_identifier($dbChannel);
-        $this->pdo->exec("LISTEN $quoted");
+        /// TODO XXX ??? piece of shit
+        /// $quoted = pg_escape_identifier($dbChannel);
+        $escaped = preg_replace('/[^a-z0-9_]/', '', $dbChannel);
+        if (!$escaped) {
+            throw new \Exception("bad DB channel name: '$dbChannel'");
+        }
+        $this->pdo->exec("LISTEN \"$escaped\"");
     }
 
-    protected function getNotify(): string
+    protected function getNotify(): ?string
     {
-        $data = $pdo->pgsqlGetNotify(PDO::FETCH_ASSOC, 10000); 
+        $data = $this->pdo->pgsqlGetNotify(PDO::FETCH_ASSOC, 10000);
 
-        return $data['payload'];
+        return $data['payload'] ?? null;
     }
 
     protected $channels = [];
 
-    protected function getChannel($exchange): string
+    protected function getChannel($exchange): AMQPChannel
     {
         if (empty($this->channels[$exchange])) {
             $this->channels[$exchange] = $this->createChannel($exchange);
@@ -61,11 +69,14 @@ class DB2AMQP
     {
         $channel = $this->amqp->channel();
         $channel->exchange_declare($exchange, 'fanout', false, false, false);
+
+        return $channel;
     }
 
-    protected function publish($message, $exchange, $routing): void
+    protected function publish($text, $exchange, $routing): void
     {
         $channel = $this->getChannel($exchange);
+        $message = new AMQPMessage($text);
         $channel->basic_publish($message, $exchange, $routing);
     }
 }

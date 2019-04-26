@@ -12,7 +12,7 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
     $channel  = $argv[1];
     $exchange = $argv[2];
 
-    require __DIR__ . '/../autoload.php';
+    require dirname(__DIR__, 3) . '/autoload.php';
 
     $dotenv = createDotenv();
     $dotenv->load();
@@ -34,7 +34,7 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 function createDotenv($dir = null, $file = '.env')
 {
     if ($dir === null) {
-        $dir = dirname(__DIR__, 2);
+        $dir = dirname(__DIR__, 4);
     }
     if (method_exists(Dotenv::class, 'create')) {
         return Dotenv::create($dir, $file);
