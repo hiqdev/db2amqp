@@ -15,7 +15,9 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
     require dirname(__DIR__, 3) . '/autoload.php';
 
     $dotenv = createDotenv();
-    $dotenv->load();
+    if ($dotenv) {
+        $dotenv->load();
+    }
 
     $pdo = createPDO();
     $amqp = createAMQP();
@@ -25,7 +27,7 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 })($argv);
 
 /**
- * Creates Dotenv object.
+ * Creates Dotenv object if Dotenv is installed and `.env` file exists.
  * Supports both 2 and 3 version of `phpdotenv`
  * @param mixed $dir
  * @param mixed $file
@@ -35,6 +37,9 @@ function createDotenv($dir = null, $file = '.env')
 {
     if ($dir === null) {
         $dir = dirname(__DIR__, 4);
+    }
+    if (!class_exists(Dotenv::class) || !file_exists("$dir/$file")) {
+        return null;
     }
     if (method_exists(Dotenv::class, 'create')) {
         return Dotenv::create($dir, $file);
