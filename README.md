@@ -5,3 +5,17 @@
 [![Build Status](https://img.shields.io/travis/hiqdev/db2amqp.svg)](https://travis-ci.org/hiqdev/db2amqp)
 [![Scrutinizer Code Coverage](https://img.shields.io/scrutinizer/coverage/g/hiqdev/db2amqp.svg)](https://scrutinizer-ci.com/g/hiqdev/db2amqp/)
 [![Scrutinizer Code Quality](https://img.shields.io/scrutinizer/g/hiqdev/db2amqp.svg)](https://scrutinizer-ci.com/g/hiqdev/db2amqp/)
+
+## Usage
+
+Start publisher:
+
+```sh
+./vendor/bin/db2amqp db_channel amqp_exchange
+```
+
+Send message:
+
+```sql
+SELECT pg_notify('db_channel', '{"id": 123, "type": "bot,dns,update"}')
+```
