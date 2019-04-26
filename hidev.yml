@@ -1,0 +1,5 @@
+package:
+    type:     project
+    name:     db2amqp
+    title:    DataBase notifications to AMQP forwarding
+    keywords: amqp, postgresql

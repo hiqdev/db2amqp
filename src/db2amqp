@@ -1,0 +1,66 @@
+#!/usr/bin/env php
+<?php
+
+use Dotenv\Dotenv;
+use HiQDev\DB2AMQP\DB2AMQP;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+
+(function ($argv) {
+    if (count($argv)<3) {
+        die("usage: db2amqp db_channel amqp_exchange");
+    }
+    $channel  = $argv[1];
+    $exchange = $argv[2];
+
+    require __DIR__ . '/../autoload.php';
+
+    $dotenv = createDotenv();
+    $dotenv->load();
+
+    $pdo = createPDO();
+    $amqp = createAMQP();
+
+    $bridge = new DB2AMQP($pdo, $amqp);
+    $bridge->run($channel, $exchange);
+})($argv);
+
+/**
+ * Creates Dotenv object.
+ * Supports both 2 and 3 version of `phpdotenv`
+ * @param mixed $dir
+ * @param mixed $file
+ * @return Dotenv
+ */
+function createDotenv($dir = null, $file = '.env')
+{
+    if ($dir === null) {
+        $dir = dirname(__DIR__, 2);
+    }
+    if (method_exists(Dotenv::class, 'create')) {
+        return Dotenv::create($dir, $file);
+    } else {
+        return new Dotenv($dir, $file);
+    }
+}
+
+function createPDO()
+{
+    $type = $_ENV['DB_TYPE'] ?? 'pgsql';
+    $host = $_ENV['DB_HOST'] ?? 'pgsql';
+    $port = $_ENV['DB_PORT'] ?? 5432;
+    $name = $_ENV['DB_NAME'] ?? 'postgres';
+    $user = $_ENV['DB_USER'] ?? 'postgres';
+    $password = $_ENV['DB_PASSWORD'] ?? 'postgres';
+
+    return new PDO("$type:host=$host;port=$port;dbname=$name", $user, $password);
+}
+
+function createAMQP()
+{
+    $host = $_ENV['AMQP_HOST'] ?? 'amqp';
+    $port = $_ENV['AMQP_PORT'] ?? 5672;
+    $user = $_ENV['AMQP_USER'] ?? 'guest';
+    $password = $_ENV['AMQP_PASSWORD'] ?? 'guest';
+
+    return new AMQPStreamConnection($host, $port, $user, $password);
+}
