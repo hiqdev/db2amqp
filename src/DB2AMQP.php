@@ -31,6 +31,10 @@ class DB2AMQP
 
         while (1) {
             $json = $this->getNotify();
+            if ($json === null) {
+                continue;
+            }
+
             $data = json_decode($json, true);
             $this->publish($json, $exchange, $data['type'] ?? '');
         }
@@ -50,6 +54,9 @@ class DB2AMQP
     protected function getNotify(): ?string
     {
         $data = $this->pdo->pgsqlGetNotify(PDO::FETCH_ASSOC, 10000);
+        if ($data === false) {
+            return null;
+        }
 
         return $data['payload'] ?? null;
     }
@@ -73,10 +80,18 @@ class DB2AMQP
         return $channel;
     }
 
-    protected function publish($text, $exchange, $routing): void
+    protected function publish(string $json, string $exchange, ?string $routing = null): void
     {
+        error_log(sprintf(
+            'Publishing to exchange "%s" (routing-key %s) message "%s"',
+            $exchange, $routing, $json
+        ));
+
         $channel = $this->getChannel($exchange);
-        $message = new AMQPMessage($text);
+        $message = new AMQPMessage($json, [
+            'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+            'content_type' => 'application/json',
+        ]);
         $channel->basic_publish($message, $exchange, $routing);
     }
 }
