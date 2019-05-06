@@ -32,6 +32,7 @@ class DB2AMQP
         while (1) {
             $json = $this->getNotify();
             if ($json === null) {
+                $this->sendHeartbeat();
                 continue;
             }
 
@@ -93,5 +94,10 @@ class DB2AMQP
             'content_type' => 'application/json',
         ]);
         $channel->basic_publish($message, $exchange, $routing);
+    }
+
+    protected function sendHeartbeat(): void
+    {
+        $this->amqp->getIO()->read(0);
     }
 }
