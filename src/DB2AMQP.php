@@ -37,7 +37,7 @@ class DB2AMQP
             }
 
             $data = json_decode($json, true);
-            $this->publish($json, $exchange, $data['type'] ?? '');
+            $this->publish($json, $exchange, $data['routing_key'] ?? '');
         }
     }
 
@@ -81,11 +81,12 @@ class DB2AMQP
         return $channel;
     }
 
-    protected function publish(string $json, string $exchange, ?string $routing = null): void
+    protected function publish(string $json, string $exchange, ?string $routingKey = null): void
     {
+        /** @noinspection ForgottenDebugOutputInspection */
         error_log(sprintf(
             'Publishing to exchange "%s" (routing-key %s) message "%s"',
-            $exchange, $routing, $json
+            $exchange, $routingKey, $json
         ));
 
         $channel = $this->getChannel($exchange);
@@ -93,7 +94,7 @@ class DB2AMQP
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
             'content_type' => 'application/json',
         ]);
-        $channel->basic_publish($message, $exchange, $routing);
+        $channel->basic_publish($message, $exchange, $routingKey);
     }
 
     protected function sendHeartbeat(): void
