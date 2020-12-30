@@ -2,10 +2,12 @@
 
 namespace HiQDev\DB2AMQP;
 
+use Closure;
 use PDO;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use RuntimeException;
 
 class DB2AMQP
 {
@@ -18,6 +20,8 @@ class DB2AMQP
      * @var AMQPStreamConnection
      */
     protected $amqp;
+
+    protected ?Closure $filter = null;
 
     public function __construct(PDO $pdo, AMQPStreamConnection $amqp)
     {
@@ -36,8 +40,11 @@ class DB2AMQP
                 continue;
             }
 
-            $data = json_decode($json, true);
-            $this->publish($json, $exchange, $data['routing_key'] ?? '');
+            $message = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            if (!$this->shouldBePublished($message)) {
+
+            }
+            $this->publish($json, $exchange, $message['routing_key'] ?? '');
         }
     }
 
@@ -47,7 +54,7 @@ class DB2AMQP
         /// $quoted = pg_escape_identifier($dbChannel);
         $escaped = preg_replace('/[^a-z0-9_]/', '', $dbChannel);
         if (!$escaped) {
-            throw new \Exception("bad DB channel name: '$dbChannel'");
+            throw new RuntimeException("bad DB channel name: '$dbChannel'");
         }
         $this->pdo->exec("LISTEN \"$escaped\"");
     }
@@ -100,5 +107,19 @@ class DB2AMQP
     protected function sendHeartbeat(): void
     {
         $this->amqp->getIO()->read(0);
+    }
+
+    private function shouldBePublished($message): bool
+    {
+        if ($this->filter === null) {
+            return true;
+        }
+
+        return call_user_func($this->filter, $message);
+    }
+
+    public function filterMessages(Closure $filter): void
+    {
+        $this->filter = $filter;
     }
 }

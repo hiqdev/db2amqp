@@ -42,7 +42,8 @@
         }
     ],
     "require": {
-        "php-amqplib/php-amqplib": "^2.7"
+        "php-amqplib/php-amqplib": "^2.7",
+        "ext-pdo": "*"
     },
     "require-dev": {
         "hiqdev/hidev-php": "dev-master",

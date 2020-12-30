@@ -23,8 +23,18 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
     $amqp = createAMQP();
 
     $bridge = new DB2AMQP($pdo, $amqp);
+    attachFilter($bridge);
     $bridge->run($channel, $exchange);
 })($argv);
+
+function attachFilter(DB2AMQP $bridge): void
+{
+    if (isset($_ENV['DB2AMQP_FILTER_FUNCTION'])) {
+        $bridge->filterMessages(
+            Closure::fromCallable($_ENV['DB2AMQP_FILTER_FUNCTION'])
+        );
+    }
+}
 
 /**
  * Creates Dotenv object if Dotenv is installed and `.env` file exists.
