@@ -42,7 +42,7 @@ class DB2AMQP
 
             $message = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
             if (!$this->shouldBePublished($message)) {
-
+                continue;
             }
             $this->publish($json, $exchange, $message['routing_key'] ?? '');
         }
