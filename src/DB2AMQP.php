@@ -36,6 +36,7 @@ class DB2AMQP
         while (1) {
             $json = $this->getNotify();
             if ($json === null) {
+                $this->pingDb();
                 $this->sendHeartbeat();
                 continue;
             }
@@ -102,6 +103,16 @@ class DB2AMQP
             'content_type' => 'application/json',
         ]);
         $channel->basic_publish($message, $exchange, $routingKey);
+    }
+
+    /**
+     * Fails when DB connection is lost, otherwise pgsqlGetNotify just keeps returning nothing.
+     */
+    protected function pingDb(): void
+    {
+        if ($this->pdo->query('SELECT 1') === false) {
+            throw new RuntimeException('DB connection lost: ' . implode(' ', $this->pdo->errorInfo()));
+        }
     }
 
     protected function sendHeartbeat(): void
