@@ -38,7 +38,7 @@ function attachFilter(DB2AMQP $bridge): void
 
 /**
  * Creates Dotenv object if Dotenv is installed and `.env` file exists.
- * Supports both 2 and 3 version of `phpdotenv`
+ * Supports versions 2 to 5 of `phpdotenv`
  * @param mixed $dir
  * @param mixed $file
  * @return Dotenv
@@ -51,7 +51,9 @@ function createDotenv($dir = null, $file = '.env')
     if (!class_exists(Dotenv::class) || !file_exists("$dir/$file")) {
         return null;
     }
-    if (method_exists(Dotenv::class, 'create')) {
+    if (method_exists(Dotenv::class, 'createImmutable')) {
+        return Dotenv::createImmutable($dir, $file);
+    } elseif (method_exists(Dotenv::class, 'create')) {
         return Dotenv::create($dir, $file);
     } else {
         return new Dotenv($dir, $file);
